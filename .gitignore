@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Model weights (too large for git)
+models/*.pt
+models/anomaly_model/
+
+# Datasets (downloaded separately)
+datasets/
+data/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Gradio
+flagged/
+
+# Ultralytics training runs
+runs/
+
+# Byte-compiled
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
