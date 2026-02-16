@@ -1,15 +1,18 @@
 """
 DefectVision AI - Local Training Script
-Train YOLOv8n models on your local GPU.
+Train YOLOv8 models on your local GPU or CPU.
 
 Usage:
-    python train_local.py --domain metal --api-key YOUR_ROBOFLOW_KEY
-    python train_local.py --domain pcb --api-key YOUR_ROBOFLOW_KEY
     python train_local.py --domain building --api-key YOUR_ROBOFLOW_KEY
+    python train_local.py --domain building --api-key YOUR_KEY --model yolov8s.pt
     python train_local.py --domain all --api-key YOUR_ROBOFLOW_KEY
+    python train_local.py --domain metal --api-key YOUR_KEY --epochs 100
 
-For GTX 1650 Ti (4GB VRAM): uses batch=8, imgsz=640, YOLOv8n (nano).
-Training takes ~30-45 min per domain.
+GPU auto-detection:
+    >= 12GB VRAM  ->  yolov8s, batch=16
+    >= 6GB VRAM   ->  yolov8s, batch=12
+    >= 4GB VRAM   ->  yolov8n, batch=8   (GTX 1650 Ti)
+    CPU fallback  ->  yolov8n, batch=4
 """
 
 import argparse
@@ -21,7 +24,6 @@ import torch
 from ultralytics import YOLO
 
 
-# Dataset configs for Roboflow download
 DATASET_CONFIGS = {
     "metal": {
         "workspace": "harit-yadav-u3zph",
@@ -48,20 +50,34 @@ DATASET_CONFIGS = {
 
 
 def check_gpu():
-    """Check GPU availability and VRAM."""
+    """Check GPU availability, return (has_gpu, vram_gb)."""
     print("\n=== GPU Check ===")
     if torch.cuda.is_available():
         gpu_name = torch.cuda.get_device_name(0)
-        vram_total = torch.cuda.get_device_properties(0).total_mem / 1e9
-        vram_free = (torch.cuda.get_device_properties(0).total_mem - torch.cuda.memory_allocated(0)) / 1e9
-        print(f"  GPU: {gpu_name}")
-        print(f"  VRAM: {vram_total:.1f} GB total")
-        print(f"  PyTorch: {torch.__version__}")
-        print(f"  CUDA: {torch.version.cuda}")
-        return True
+        props = torch.cuda.get_device_properties(0)
+        vram_gb = getattr(props, 'total_memory', getattr(props, 'total_mem', 0)) / 1e9
+        print(f"  GPU:      {gpu_name}")
+        print(f"  VRAM:     {vram_gb:.1f} GB")
+        print(f"  PyTorch:  {torch.__version__}")
+        print(f"  CUDA:     {torch.version.cuda}")
+        return True, vram_gb
     else:
         print("  WARNING: No CUDA GPU detected. Training will use CPU (much slower).")
-        return False
+        print("  Make sure you installed PyTorch with CUDA support:")
+        print("    pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126")
+        return False, 0
+
+
+def auto_config(vram_gb: float):
+    """Return (model_size, batch_size) based on available VRAM."""
+    if vram_gb >= 12:
+        return "yolov8s.pt", 16
+    elif vram_gb >= 6:
+        return "yolov8s.pt", 12
+    elif vram_gb >= 4:
+        return "yolov8n.pt", 8
+    else:
+        return "yolov8n.pt", 4
 
 
 def download_dataset(domain: str, api_key: str) -> str:
@@ -82,33 +98,46 @@ def download_dataset(domain: str, api_key: str) -> str:
     return str(data_yaml)
 
 
-def train_model(domain: str, data_yaml: str, epochs: int = 50, batch: int = 8):
-    """Train YOLOv8n model on the dataset."""
+def train_model(
+    domain: str,
+    data_yaml: str,
+    model_size: str,
+    epochs: int,
+    batch: int,
+    device,
+):
+    """Train a YOLOv8 model on the dataset."""
     config = DATASET_CONFIGS[domain]
-    print(f"\n=== Training YOLOv8n for {domain.upper()} ===")
-    print(f"  Epochs: {epochs}")
+
+    print(f"\n=== Training {model_size} for {domain.upper()} ===")
+    print(f"  Model:      {model_size}")
+    print(f"  Epochs:     {epochs}")
     print(f"  Batch size: {batch}")
     print(f"  Image size: 640")
-    print(f"  Model: yolov8n.pt (nano - 3.2M params)")
-    print(f"  This will take ~30-45 minutes on GTX 1650 Ti...")
+    print(f"  Device:     {device}")
     print()
 
-    # Load pretrained YOLOv8 nano
-    model = YOLO("yolov8n.pt")
+    model = YOLO(model_size)
 
-    # Train
-    results = model.train(
+    model.train(
         data=data_yaml,
         epochs=epochs,
         imgsz=640,
         batch=batch,
         name=f"{domain}_defect_detector",
-        patience=10,          # early stopping
+        patience=20,
         save=True,
         plots=True,
-        device=0 if torch.cuda.is_available() else "cpu",
-        workers=4,
-        exist_ok=True,        # overwrite previous run
+        device=device,
+        workers=2,
+        exist_ok=True,
+        augment=True,
+        hsv_h=0.015,
+        hsv_s=0.7,
+        hsv_v=0.4,
+        flipud=0.5,
+        mosaic=1.0,
+        scale=0.5,
     )
 
     # Evaluate
@@ -132,7 +161,6 @@ def train_model(domain: str, data_yaml: str, epochs: int = 50, batch: int = 8):
         print(f"  File size: {output_path.stat().st_size / 1e6:.1f} MB")
     else:
         print(f"\n  WARNING: Could not find best.pt at {best_weights}")
-        # Try to find it
         for pt_file in Path("runs/detect").rglob("best.pt"):
             print(f"  Found: {pt_file}")
             shutil.copy2(pt_file, output_path)
@@ -143,7 +171,16 @@ def train_model(domain: str, data_yaml: str, epochs: int = 50, batch: int = 8):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="DefectVision AI - Local Training")
+    parser = argparse.ArgumentParser(
+        description="DefectVision AI - Local Training",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python train_local.py --domain building --api-key YOUR_KEY
+  python train_local.py --domain building --api-key YOUR_KEY --model yolov8s.pt --batch 4
+  python train_local.py --domain all --api-key YOUR_KEY --epochs 100
+        """,
+    )
     parser.add_argument(
         "--domain",
         choices=["metal", "pcb", "building", "all"],
@@ -156,24 +193,42 @@ def main():
         help="Roboflow API key (free at roboflow.com)",
     )
     parser.add_argument(
+        "--model",
+        default=None,
+        help="Model size: yolov8n.pt (nano), yolov8s.pt (small), yolov8m.pt (medium). "
+             "Auto-detected from VRAM if not specified.",
+    )
+    parser.add_argument(
         "--epochs",
         type=int,
-        default=50,
-        help="Number of training epochs (default: 50)",
+        default=100,
+        help="Number of training epochs (default: 100)",
     )
     parser.add_argument(
         "--batch",
         type=int,
-        default=8,
-        help="Batch size (default: 8, safe for 4GB VRAM)",
+        default=None,
+        help="Batch size. Auto-detected from VRAM if not specified.",
     )
 
     args = parser.parse_args()
 
-    # Check GPU
-    has_gpu = check_gpu()
+    # Check GPU and auto-configure
+    has_gpu, vram_gb = check_gpu()
+    auto_model, auto_batch = auto_config(vram_gb)
+
+    model_size = args.model or auto_model
+    batch_size = args.batch or auto_batch
+    device = 0 if has_gpu else "cpu"
+
+    print(f"\n=== Training Configuration ===")
+    print(f"  Model:      {model_size} {'(auto)' if not args.model else '(manual)'}")
+    print(f"  Batch size: {batch_size} {'(auto)' if not args.batch else '(manual)'}")
+    print(f"  Epochs:     {args.epochs}")
+    print(f"  Device:     {'GPU' if has_gpu else 'CPU'}")
+
     if not has_gpu:
-        print("\nTraining will proceed on CPU. This will be very slow.")
+        print("\nTraining will proceed on CPU. This will be VERY slow (~3-6 hours per domain).")
         response = input("Continue? [y/N]: ").strip().lower()
         if response != "y":
             sys.exit(0)
@@ -186,11 +241,16 @@ def main():
         print(f"  TRAINING: {domain.upper()}")
         print(f"{'='*60}")
 
-        # Download dataset
         data_yaml = download_dataset(domain, args.api_key)
 
-        # Train
-        output_path = train_model(domain, data_yaml, args.epochs, args.batch)
+        output_path = train_model(
+            domain=domain,
+            data_yaml=data_yaml,
+            model_size=model_size,
+            epochs=args.epochs,
+            batch=batch_size,
+            device=device,
+        )
 
         print(f"\n  {domain.upper()} training complete!")
         print(f"  Weights: {output_path}")

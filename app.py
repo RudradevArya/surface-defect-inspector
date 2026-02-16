@@ -4,6 +4,7 @@ Multi-domain surface defect inspection with Phase 1 (YOLO) and Phase 2 (Anomaly)
 """
 
 import os
+import tempfile
 import numpy as np
 import gradio as gr
 from PIL import Image
@@ -79,8 +80,10 @@ def run_yolo_detection(image, domain, confidence):
             confidence_threshold=confidence,
         )
 
-        # Save PDF to temp file for download
-        pdf_path = f"/tmp/defectvision_report_{domain_key}.pdf"
+        # Save PDF to temp file for download (cross-platform)
+        pdf_path = os.path.join(tempfile.gettempdir(), f"defectvision_report_{domain_key}.pdf")
+        # # Save PDF to temp file for download
+        # pdf_path = f"/tmp/defectvision_report_{domain_key}.pdf"
         with open(pdf_path, "wb") as f:
             f.write(pdf_bytes)
 
