@@ -13,7 +13,7 @@ env/
 .venv/
 
 # Model weights (too large for git)
-models/*.pt
+# models/*.pt
 models/anomaly_model/
 
 # Datasets (downloaded separately)

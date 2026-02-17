@@ -133,7 +133,6 @@ def create_app():
 
     with gr.Blocks(
         title="DefectVision AI",
-        theme=gr.themes.Soft(primary_hue="blue", secondary_hue="orange"),
     ) as app:
 
         # Header
@@ -286,6 +285,7 @@ if __name__ == "__main__":
     app = create_app()
     app.launch(
         server_name="0.0.0.0",
-        server_port=7860,
+        server_port=int(os.environ.get("GRADIO_SERVER_PORT", 7860)),
         share=False,
+        theme=gr.themes.Soft(primary_hue="blue", secondary_hue="orange"),
     )

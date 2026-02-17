@@ -151,21 +151,44 @@ def train_model(
     # Copy best weights to models/ directory
     models_dir = Path("models")
     models_dir.mkdir(exist_ok=True)
-
-    best_weights = Path(f"runs/detect/{domain}_defect_detector/weights/best.pt")
     output_path = models_dir / config["output_name"]
 
-    if best_weights.exists():
+    # YOLO may save to a resolved path (e.g. OneDrive Desktop redirect),
+    # so we check multiple candidate locations.
+    candidates = [
+        Path(f"runs/detect/{domain}_defect_detector/weights/best.pt"),
+        Path(f"runs/detect/{domain}_defect_detector2/weights/best.pt"),
+    ]
+
+    # Also check the path YOLO actually printed (resolve cwd for OneDrive)
+    resolved_cwd = Path.cwd().resolve()
+    candidates.append(resolved_cwd / f"runs/detect/{domain}_defect_detector/weights/best.pt")
+
+    best_weights = None
+    for candidate in candidates:
+        if candidate.exists():
+            best_weights = candidate
+            break
+
+    # Fallback: search recursively
+    if best_weights is None:
+        for search_root in [Path("runs/detect"), resolved_cwd / "runs/detect"]:
+            if search_root.exists():
+                for pt_file in search_root.rglob("best.pt"):
+                    best_weights = pt_file
+                    break
+            if best_weights:
+                break
+
+    if best_weights:
         shutil.copy2(best_weights, output_path)
         print(f"\n  Best weights saved to: {output_path}")
         print(f"  File size: {output_path.stat().st_size / 1e6:.1f} MB")
     else:
-        print(f"\n  WARNING: Could not find best.pt at {best_weights}")
-        for pt_file in Path("runs/detect").rglob("best.pt"):
-            print(f"  Found: {pt_file}")
-            shutil.copy2(pt_file, output_path)
-            print(f"  Copied to: {output_path}")
-            break
+        print(f"\n  ERROR: Could not find best.pt anywhere in runs/detect/")
+        print(f"  Check these paths manually:")
+        print(f"    {Path.cwd() / 'runs/detect'}")
+        print(f"    {resolved_cwd / 'runs/detect'}")
 
     return output_path
 
