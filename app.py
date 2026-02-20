@@ -1,5 +1,5 @@
 """
-DefectVision AI - Gradio Web Application
+SurfaceVision AI - Gradio Web Application
 Multi-domain surface defect inspection with Phase 1 (YOLO) and Phase 2 (Anomaly) detection.
 """
 
@@ -45,7 +45,7 @@ def load_image_from_url(url: str):
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = resp.read()
         img = Image.open(io.BytesIO(data)).convert("RGB")
-        tmp_path = os.path.join(tempfile.gettempdir(), "defectvision_url_image.png")
+        tmp_path = os.path.join(tempfile.gettempdir(), "SurfaceVision_url_image.png")
         img.save(tmp_path)
         return gr.update(value=tmp_path, visible=True), "✅ Image loaded from URL."
     except Exception as e:
@@ -220,7 +220,7 @@ def run_yolo_detection(image, domain, confidence):
             domain=domain_key,
             confidence_threshold=confidence,
         )
-        pdf_path = os.path.join(tempfile.gettempdir(), f"defectvision_report_{domain_key}.pdf")
+        pdf_path = os.path.join(tempfile.gettempdir(), f"SurfaceVision_report_{domain_key}.pdf")
         with open(pdf_path, "wb") as f:
             f.write(pdf_bytes)
 
@@ -465,61 +465,6 @@ button[role="tab"][aria-selected="true"] {
     line-height: 1.8 !important;
     color: #312e81 !important;
 }
-
-/* ── DOMAIN SELECTOR — segmented pill control ── */
-#domain-selector > .wrap {
-    display: flex !important;
-    flex-direction: row !important;
-    gap: 0 !important;
-    background: #f1eeff !important;
-    border-radius: 14px !important;
-    padding: 4px !important;
-    border: 1px solid rgba(124,58,237,0.12) !important;
-    box-shadow: inset 0 1px 3px rgba(124,58,237,0.07) !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-}
-#domain-selector > .wrap label {
-    flex: 1 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 6px !important;
-    background: transparent !important;
-    border: none !important;
-    border-radius: 10px !important;
-    padding: 10px 0 !important;
-    font-weight: 700 !important;
-    font-size: 13px !important;
-    color: #7b7fa8 !important;
-    cursor: pointer !important;
-    transition: all 0.22s ease !important;
-    white-space: nowrap !important;
-    box-shadow: none !important;
-    user-select: none !important;
-}
-#domain-selector > .wrap label:hover {
-    color: #7c3aed !important;
-    background: rgba(124,58,237,0.06) !important;
-    transform: none !important;
-}
-/* active/selected pill */
-#domain-selector > .wrap label:has(input:checked),
-#domain-selector > .wrap label.selected {
-    background: #ffffff !important;
-    color: #7c3aed !important;
-    font-weight: 800 !important;
-    box-shadow: 0 2px 10px rgba(124,58,237,0.15), 0 1px 3px rgba(0,0,0,0.06) !important;
-    border-radius: 10px !important;
-}
-/* hide the actual radio dot */
-#domain-selector > .wrap label input[type="radio"] {
-    display: none !important;
-}
-/* domain icons via ::before */
-#domain-selector > .wrap label:nth-child(1)::before { content: '🔩 '; }
-#domain-selector > .wrap label:nth-child(2)::before { content: '💻 '; }
-#domain-selector > .wrap label:nth-child(3)::before { content: '🏗️ '; }
 
 /* ── OTHER RADIO BUTTONS (generic) ── */
 .glass-card .wrap { gap: 10px !important; }
@@ -776,7 +721,6 @@ footer { display: none !important; }
 }
 
 /* hide the raw gr.File component */
-#report-download-hidden { display: none !important; }
 
 /* ── OUTPUT IMAGE CHIP LABEL ── */
 .img-chip-label {
@@ -800,80 +744,6 @@ footer { display: none !important; }
     color: #6d28d9;
     flex: 1;
 }
-.img-chip-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-left: auto;
-    flex-shrink: 0;
-}
-.img-chip-btn {
-    background: rgba(124,58,237,0.07);
-    border: 1px solid rgba(124,58,237,0.15);
-    border-radius: 8px;
-    color: #7c3aed;
-    font-size: 0.8rem;
-    width: 28px; height: 28px;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    transition: all 0.18s ease;
-    padding: 0;
-    line-height: 1;
-}
-.img-chip-btn:hover {
-    background: rgba(124,58,237,0.15);
-    border-color: #7c3aed;
-    transform: scale(1.08);
-}
-/* fullscreen modal */
-#dv-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 99999;
-    background: rgba(0,0,0,0.90);
-    backdrop-filter: blur(6px);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    cursor: zoom-out;
-}
-#dv-modal.active { display: flex !important; }
-#dv-modal-img {
-    max-width: 92vw;
-    max-height: 90vh;
-    border-radius: 16px;
-    object-fit: contain;
-    box-shadow: 0 30px 80px rgba(0,0,0,0.6);
-    cursor: default;
-}
-#dv-modal-close {
-    position: fixed;
-    top: 20px; right: 24px;
-    background: rgba(255,255,255,0.10);
-    border: 1px solid rgba(255,255,255,0.18);
-    color: #fff;
-    border-radius: 50%;
-    width: 42px; height: 42px;
-    font-size: 1.1rem;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: background 0.18s;
-}
-#dv-modal-close:hover { background: rgba(255,255,255,0.22); }
-#dv-modal-hint {
-    position: fixed;
-    bottom: 22px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: rgba(255,255,255,0.45);
-    font-size: 0.75rem;
-    font-family: Inter, sans-serif;
-    pointer-events: none;
-}
-@keyframes pulse-dot {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50%       { opacity: 0.4; transform: scale(0.7); }
-}
 /* connect image block border flush to chip label above */
 #output-image-p1 > div,
 #output-image-p2 > div {
@@ -881,62 +751,6 @@ footer { display: none !important; }
     border: 1.5px solid rgba(124,58,237,0.13) !important;
     border-top: none !important;
     overflow: hidden !important;
-}
-/* fullscreen trigger button */
-#fs-btn-p1, #fs-btn-p2 {
-    margin-top: 6px !important;
-    background: rgba(124,58,237,0.06) !important;
-    border: 1.5px solid rgba(124,58,237,0.15) !important;
-    border-radius: 12px !important;
-    color: #7c3aed !important;
-    font-size: 0.78rem !important;
-    font-weight: 700 !important;
-    padding: 7px 14px !important;
-    width: auto !important;
-    box-shadow: none !important;
-    transition: all 0.18s ease !important;
-}
-#fs-btn-p1:hover, #fs-btn-p2:hover {
-    background: rgba(124,58,237,0.13) !important;
-    border-color: #7c3aed !important;
-    transform: none !important;
-    box-shadow: none !important;
-}
-
-/* ── MODEL STATUS CHIPS ── */
-.model-status-bar {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 18px;
-    padding-bottom: 16px;
-    border-bottom: 1.5px solid rgba(124,58,237,0.08);
-}
-.model-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    border-radius: 100px;
-    font-size: 0.75rem;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    border: 1.5px solid;
-}
-.model-chip-on  { background: #f0fdf4; border-color: #86efac; color: #15803d; }
-.model-chip-off { background: #fafafa; border-color: #e5e7eb; color: #9ca3af; }
-.model-chip-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.model-chip-on  .model-chip-dot { background: #22c55e; }
-.model-chip-off .model-chip-dot { background: #d1d5db; }
-.model-status-warn {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #d97706;
-    background: #fffbeb;
-    border: 1.5px solid #fcd34d;
-    border-radius: 12px;
-    padding: 8px 14px;
-    margin-bottom: 18px;
 }
 
 #about-content {
@@ -1145,7 +959,7 @@ footer { display: none !important; }
 HERO_HTML = """
 <div id="hero-wrap">
   <div class="hero-badge">✦ AI-Powered Inspection</div>
-  <h1 class="hero-title">DefectVision AI</h1>
+  <h1 class="hero-title">SurfaceVision AI</h1>
   <p class="hero-sub">Multi-Domain Surface Defect Inspection System</p>
   <div class="hero-chips">
     <span class="chip">⚡ YOLOv8 Detection</span>
@@ -1232,68 +1046,6 @@ def _clear_results_p2(image):
         gr.update(value=P2_PLACEHOLDER),
     )
 
-
-MODAL_AND_JS_HTML = """
-<div id="dv-modal" onclick="dvCloseModal()">
-  <img id="dv-modal-img" src="" alt="" onclick="event.stopPropagation()">
-  <button id="dv-modal-close" onclick="event.stopPropagation();dvCloseModal()">&#x2715;</button>
-  <div id="dv-modal-hint">Click anywhere outside to close &nbsp;&nbsp; ESC to dismiss</div>
-</div>
-<script>
-function dvGetImg(elemId) {
-    var c = document.getElementById(elemId);
-    if (!c) return null;
-    // Find the actual result image - skip tiny placeholders and gifs
-    var imgs = c.querySelectorAll('img');
-    for (var i = 0; i < imgs.length; i++) {
-        var s = imgs[i].src || '';
-        if (s && !s.startsWith('data:image/gif') && !s.endsWith('.gif') && s !== window.location.href) {
-            return imgs[i];
-        }
-    }
-    return null;
-}
-function dvMaximize(elemId) {
-    var img = dvGetImg(elemId);
-    if (!img) {
-        alert('No result image yet — run an inspection first.');
-        return;
-    }
-    document.getElementById('dv-modal-img').src = img.src;
-    document.getElementById('dv-modal').classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
-function dvShare(elemId) {
-    var img = dvGetImg(elemId);
-    if (!img) {
-        alert('No result image yet — run an inspection first.');
-        return;
-    }
-    var src = img.src;
-    if (navigator.share && navigator.canShare) {
-        fetch(src)
-          .then(function(r){ return r.blob(); })
-          .then(function(blob){
-              var file = new File([blob], 'defectvision-result.png', {type: blob.type || 'image/png'});
-              if (navigator.canShare({files:[file]})) {
-                  navigator.share({files:[file], title:'DefectVision AI Result'})
-                    .catch(function(){ window.open(src,'_blank'); });
-              } else {
-                  window.open(src,'_blank');
-              }
-          })
-          .catch(function(){ window.open(src,'_blank'); });
-    } else {
-        window.open(src, '_blank');
-    }
-}
-function dvCloseModal() {
-    document.getElementById('dv-modal').classList.remove('active');
-    document.body.style.overflow = '';
-}
-document.addEventListener('keydown', function(e){ if(e.key==='Escape') dvCloseModal(); });
-</script>
-"""
 
 
 # ========== Build Gradio Interface ==========
@@ -1453,11 +1205,10 @@ def create_app():
 </script>
 """
 
-    with gr.Blocks(title="DefectVision AI") as app:
+    with gr.Blocks(title="SurfaceVision AI") as app:
 
         # ── Hero ──
         gr.HTML(HERO_HTML)
-        gr.HTML(MODAL_AND_JS_HTML)
 
         with gr.Tabs(elem_id="main-tabs"):
 
@@ -1725,7 +1476,7 @@ def create_app():
             with gr.Tab("ℹ️  About", id="about"):
                 gr.Markdown(
                     """
-## How DefectVision AI Works
+## How SurfaceVision AI Works
 
 ### ⚡ Phase 1 — Supervised Detection (YOLOv8)
 - Trained on labeled datasets with bounding box annotations
@@ -1757,7 +1508,7 @@ def create_app():
 - **Report Generation**: ReportLab PDF with annotated images
 
 ---
-*DefectVision AI — Hackathon 2026 · Built with ❤️ and Python*
+*SurfaceVision AI — Hackathon 2026 · Built with ❤️ and Python*
                     """,
                     elem_id="about-content",
                 )
