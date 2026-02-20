@@ -198,7 +198,8 @@ def run_yolo_detection(image, domain, confidence):
     if not domain:
         return None, "Please select a domain.", None
 
-    domain_key = domain.lower()
+    # Radio value is e.g. "🔩 Metal" — extract the last word as domain key
+    domain_key = domain.split()[-1].lower()
     available = yolo_detector.get_available_domains()
 
     if domain_key not in available:
@@ -464,6 +465,64 @@ button[role="tab"][aria-selected="true"] {
     font-size: 1.05rem !important;
     line-height: 1.8 !important;
     color: #312e81 !important;
+}
+
+/* ── DOMAIN PICKER (pill-strip radio) ── */
+#domain-picker {
+    padding: 0 !important;
+    margin: 0 0 12px !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+#domain-picker > .wrap {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 0 !important;
+    background: #f1eeff !important;
+    border-radius: 14px !important;
+    padding: 4px !important;
+    border: 1.5px solid rgba(124,58,237,0.14) !important;
+    box-sizing: border-box !important;
+}
+#domain-picker > .wrap label {
+    flex: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 8px 4px !important;
+    font-weight: 700 !important;
+    font-size: 12px !important;
+    color: #7b7fa8 !important;
+    cursor: pointer !important;
+    transition: all 0.22s ease !important;
+    user-select: none !important;
+    white-space: nowrap !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+}
+#domain-picker > .wrap label:hover {
+    color: #7c3aed !important;
+    background: rgba(124,58,237,0.06) !important;
+}
+#domain-picker > .wrap label:has(input:checked) {
+    background: #ffffff !important;
+    color: #7c3aed !important;
+    font-weight: 800 !important;
+    box-shadow: 0 2px 10px rgba(124,58,237,0.15), 0 1px 3px rgba(0,0,0,0.06) !important;
+}
+#domain-picker > .wrap label input[type="radio"] {
+    display: none !important;
+}
+#domain-picker > label {
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    color: #7c3aed !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.09em !important;
 }
 
 /* ── OTHER RADIO BUTTONS (generic) ── */
@@ -1058,152 +1117,9 @@ def create_app():
         ("PCB",      "💻"),
         ("Building", "🏗️"),
     ]
-    _default_domain = next((d for d,_ in _all_domains if d.lower() in available), _all_domains[0][0])
-    _available_json = '[' + ','.join(f'"{d.lower()}"' for d,_ in _all_domains if d.lower() in available) + ']'
 
-    # Build compact pill-strip buttons (matches Upload/Webcam/URL style)
-    _card_items = []
-    for d, icon in _all_domains:
-        is_on = d.lower() in available
-        dot_html = '<span class="dv-live-dot"></span>' if is_on else ''
-        dis_attr = '' if is_on else 'disabled'
-        sel_cls  = ' dv-card-selected' if d == _default_domain else ''
-        off_cls  = ' dv-card-off' if not is_on else ''
-        _card_items.append(
-            f'<button class="dv-card{sel_cls}{off_cls}" data-val="{d}" '
-            f'data-active="{str(is_on).lower()}" {dis_attr}>'
-            f'{icon}&nbsp;{d}{dot_html}'
-            f'</button>'
-        )
-    _cards_html = ''.join(_card_items)
-
-    domain_picker_html = f"""
-<style>
-@keyframes dvpulse {{
-  0%   {{ box-shadow:0 0 0 0   rgba(34,197,94,.85); }}
-  65%  {{ box-shadow:0 0 0 8px rgba(34,197,94,0);   }}
-  100% {{ box-shadow:0 0 0 0   rgba(34,197,94,0);   }}
-}}
-.dv-seg-track {{
-  display: flex !important;
-  flex-direction: row !important;
-  gap: 0 !important;
-  background: #f1eeff !important;
-  border-radius: 14px !important;
-  padding: 4px !important;
-  border: 1.5px solid rgba(124,58,237,0.14) !important;
-  box-sizing: border-box !important;
-  margin-bottom: 12px !important;
-}}
-.dv-card {{
-  flex: 1 !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  background: transparent !important;
-  border: none !important;
-  border-radius: 10px !important;
-  padding: 8px 4px !important;
-  font-weight: 700 !important;
-  font-size: 12px !important;
-  line-height: 1 !important;
-  color: #7b7fa8 !important;
-  cursor: pointer !important;
-  transition: all 0.22s ease !important;
-  user-select: none !important;
-  white-space: nowrap !important;
-  box-shadow: none !important;
-}}
-.dv-card:hover:not([disabled]) {{
-  color: #7c3aed !important;
-  background: rgba(124,58,237,0.06) !important;
-}}
-.dv-card.dv-card-selected {{
-  background: #ffffff !important;
-  color: #7c3aed !important;
-  font-weight: 800 !important;
-  box-shadow: 0 2px 10px rgba(124,58,237,0.15), 0 1px 3px rgba(0,0,0,0.06) !important;
-}}
-.dv-card.dv-card-off {{
-  opacity: 0.38 !important;
-  cursor: not-allowed !important;
-}}
-.dv-live-dot {{
-  display: inline-block;
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: #22c55e;
-  margin-left: 5px;
-  vertical-align: middle;
-  position: relative; top: -1px;
-  flex-shrink: 0;
-  animation: dvpulse 1.8s ease-in-out infinite;
-}}
-/* strip out gr.HTML block wrapper padding */
-#domain-picker {{
-  padding: 0 !important;
-  margin: 0 !important;
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}}
-#domain-picker > div {{
-  padding: 0 !important;
-  margin: 0 !important;
-}}
-.dv-dom-section-label {{
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}}
-.dv-dom-section-label::before {{
-  content: '';
-  display: inline-block;
-  width: 3px;
-  height: 16px;
-  border-radius: 2px;
-  background: linear-gradient(180deg, #7c3aed, #a78bfa);
-  flex-shrink: 0;
-}}
-.dv-dom-section-label span {{
-  font-size: 10.5px;
-  font-weight: 700;
-  color: #7c3aed;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-  line-height: 1;
-}}
-</style>
-<div class="dv-dom-section-label"><span>Inspection Domain</span></div>
-<div class="dv-seg-track" id="dv-seg-track">{_cards_html}</div>
-
-<script>
-(function(){{
-  var DEFAULT = '{_default_domain}';
-  function dvSetDomain(val) {{
-    document.querySelectorAll('.dv-card').forEach(function(b) {{
-      b.classList.toggle('dv-card-selected', b.dataset.val === val);
-    }});
-    var wrap = document.getElementById('domain-val');
-    if (!wrap) return;
-    var inp = wrap.querySelector('textarea,input');
-    if (!inp) return;
-    var desc = Object.getOwnPropertyDescriptor(
-      inp.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype, 'value');
-    if (desc && desc.set) desc.set.call(inp, val); else inp.value = val;
-    inp.dispatchEvent(new Event('input',  {{bubbles:true}}));
-    inp.dispatchEvent(new Event('change', {{bubbles:true}}));
-  }}
-  document.addEventListener('click', function(e) {{
-    var btn = e.target.closest('.dv-card');
-    if (!btn || btn.disabled || btn.dataset.active !== 'true') return;
-    dvSetDomain(btn.dataset.val);
-  }});
-  [200, 600, 1500].forEach(function(t) {{ setTimeout(function(){{ dvSetDomain(DEFAULT); }}, t); }});
-}})();
-</script>
-"""
+    _domain_choices = [f"{icon} {d}" for d, icon in _all_domains if d.lower() in available]
+    _default_choice = _domain_choices[0] if _domain_choices else None
 
     with gr.Blocks(title="SurfaceVision AI") as app:
 
@@ -1228,13 +1144,12 @@ def create_app():
                         with gr.Group(elem_classes="glass-card"):
                             gr.Markdown("### 🎯 Inspection Setup", elem_classes="card-header-main")
 
-                            domain_selector = gr.Textbox(
-                                value=_default_domain,
-                                visible=False,
-                                elem_id="domain-val",
-                                label="domain-val",
+                            domain_selector = gr.Radio(
+                                choices=_domain_choices,
+                                value=_default_choice,
+                                label="Inspection Domain",
+                                elem_id="domain-picker",
                             )
-                            gr.HTML(domain_picker_html, elem_id="domain-picker")
                             confidence_slider = gr.Slider(
                                 minimum=0.1, maximum=1.0,
                                 value=DEFAULT_CONFIDENCE, step=0.05,
