@@ -26,10 +26,10 @@ from ultralytics import YOLO
 
 DATASET_CONFIGS = {
     "metal": {
-        "workspace": "harit-yadav-u3zph",
-        "project": "neu-det-jkimb",
-        "version": 1,
-        "description": "NEU-DET Metal Surface Defects (6 classes)",
+        "workspace": "siddiqui",
+        "project": "defect-detection-neu",
+        "version": 4,
+        "description": "NEU-DET Metal Surface Defects – Augmented (6 classes, ~9.7k images)",
         "output_name": "metal_yolo_best.pt",
     },
     "pcb": {

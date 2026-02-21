@@ -233,6 +233,45 @@ def run_yolo_detection(image, domain, confidence):
 
 # ========== Phase 2: Anomaly Detection ==========
 
+def _build_anomaly_result_html(results):
+    score = results.get("anomaly_score", 0.0)
+    is_anomalous = results.get("is_anomalous", False)
+    pct = round(score * 100, 1)
+
+    if is_anomalous:
+        verdict_icon = "⚠️"
+        verdict_text = "Anomaly Detected"
+        sev_class = "sev-high" if score > 0.75 else "sev-medium"
+    else:
+        verdict_icon = "✅"
+        verdict_text = "No Anomaly"
+        sev_class = "sev-low"
+
+    return (
+        f'<div class="result-summary">'
+        f'<div class="domain-badge">🔬 ANOMALY Inspection</div>'
+        f'<div class="result-stats-row">'
+        f'  <div class="stat-chip">'
+        f'    <span class="stat-number">{pct}%</span>'
+        f'    <span class="stat-label">Anomaly Score</span>'
+        f'  </div>'
+        f'  <div class="stat-chip {sev_class}">'
+        f'    <span class="sev-dot"></span>'
+        f'    <span class="sev-label">{verdict_text}</span>'
+        f'    <span class="stat-label">Verdict</span>'
+        f'  </div>'
+        f'</div>'
+        f'<div class="result-divider"></div>'
+        f'<div class="defect-list">'
+        f'  <div class="defect-row">'
+        f'    <span class="defect-name">{verdict_icon} {verdict_text}</span>'
+        f'    <span class="defect-count-badge">{pct}%</span>'
+        f'  </div>'
+        f'</div>'
+        f'</div>'
+    )
+
+
 def run_anomaly_detection(image):
     image = _ensure_numpy(image)
     if image is None:

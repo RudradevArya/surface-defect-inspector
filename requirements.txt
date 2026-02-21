@@ -9,7 +9,7 @@ plotly
 # PDF Report Generation
 fpdf2
 
-# Phase 2: Anomaly Detection (install when ready for Phase 2)
-# anomalib
-# torch
-# torchvision
+# Phase 2: Anomaly Detection
+anomalib
+torch
+torchvision
